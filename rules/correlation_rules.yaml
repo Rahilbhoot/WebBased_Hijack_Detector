@@ -1,0 +1,35 @@
+# ==========================================
+# Multi-Event Correlation Rules: CR01 - CR03
+# ==========================================
+
+correlations:
+  - id: "CR01"
+    name: "Registry policy change followed by browser launch"
+    description: "Browser policy change followed by browser execution by a non-installer within 5 minutes"
+    required_rules: ["BH002", "BH001"]
+    time_window_seconds: 300  # 5 minutes
+    score_bonus: 30
+    explanation: >
+      Correlated attack sequence: Browser policy registry modification (BH002) was followed
+      by browser launch with custom parameters within 5 minutes (+30 correlation risk).
+
+  - id: "CR02"
+    name: "Proxy redirection and hosts file tampering"
+    description: "System proxy modification combined with hosts file alteration within 10 minutes"
+    required_rules: ["BH003", "BH004"]
+    time_window_seconds: 600  # 10 minutes
+    score_bonus: 25
+    explanation: >
+      Correlated attack sequence: Proxy configuration tampering (BH003) combined with Windows
+      hosts file modification (BH004) detected within 10 minutes (+25 correlation risk).
+
+  - id: "CR03"
+    name: "Detection followed by audit log clearing"
+    description: "Any browser hijack detection followed by Security event log clearing within 60 minutes"
+    required_rules: ["BH007"]  # Requires BH007 plus any other BH rule in history
+    trigger_rule: "BH007"
+    time_window_seconds: 3600  # 60 minutes
+    score_bonus: 30
+    explanation: >
+      Correlated defense evasion: Forensic audit logs were cleared (BH007) shortly after
+      suspicious browser tampering events on the same device (+30 correlation risk).

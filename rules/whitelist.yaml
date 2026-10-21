@@ -1,0 +1,27 @@
+# ==========================================
+# Detection Whitelist & Suppression Catalog
+# ==========================================
+
+trusted_paths:
+  - "C:\\Windows\\System32\\*"
+  - "C:\\Program Files\\Google\\*"
+  - "C:\\Program Files (x86)\\Google\\*"
+  - "C:\\Program Files\\Microsoft\\Edge\\*"
+  - "C:\\Program Files (x86)\\Microsoft\\Edge\\*"
+
+trusted_publishers:
+  - "Microsoft Corporation"
+  - "Google LLC"
+
+suppressed_rules:
+  BH002:
+    - field: "process_image"
+      match: "contains"
+      values:
+        - "MicrosoftEdgeUpdate.exe"
+        - "GoogleUpdate.exe"
+  BH003:
+    - field: "user"
+      match: "equals"
+      values:
+        - "NT AUTHORITY\\SYSTEM"
