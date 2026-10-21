@@ -16,19 +16,22 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set
 
-# Attempt import of win32evtlog; handled gracefully on non-Windows/mock setups
-try:
-    import pywintypes  # type: ignore
-    import win32evtlog  # type: ignore
-
-    HAS_WIN32EVTLOG = True
-except ImportError:
-    win32evtlog = None
-    pywintypes = None
-    HAS_WIN32EVTLOG = False
-
 from agent.config import AgentConfig, ChannelConfig, load_config
 from agent.logger import setup_logger
+
+# Attempt import of win32evtlog; typed as Any to allow graceful mocking/non-Windows execution
+win32evtlog: Any = None
+pywintypes: Any = None
+
+try:
+    import pywintypes as _pwt  # type: ignore
+    import win32evtlog as _w32  # type: ignore
+
+    win32evtlog = _w32
+    pywintypes = _pwt
+    HAS_WIN32EVTLOG = True
+except ImportError:
+    HAS_WIN32EVTLOG = False
 
 logger = logging.getLogger("agent.collector")
 
@@ -209,7 +212,7 @@ class EventCollector:
 
     def get_latest_record_id(self, channel: str) -> Optional[int]:
         """Queries the latest event in a channel to find the current highest EventRecordID."""
-        if not HAS_WIN32EVTLOG:
+        if win32evtlog is None:
             return None
 
         try:
@@ -251,7 +254,7 @@ class EventCollector:
         self, channel_cfg: ChannelConfig, max_events: int = 100
     ) -> List[Dict[str, Any]]:
         """Collects new events from a single channel since the last bookmark."""
-        if not HAS_WIN32EVTLOG:
+        if win32evtlog is None:
             self.log.debug(
                 "win32evtlog is not available (non-Windows platform or test environment)."
             )
