@@ -1,0 +1,13 @@
+# ==========================================
+# Sample Terraform Variables
+# Copy this file to terraform.tfvars and customize
+# ==========================================
+
+aws_region             = "us-east-1"
+environment            = "dev"
+project_name           = "hijack-detector"
+alert_email            = "rahilbhoot7@gmail.com"
+raw_log_retention_days = 90
+object_lock_mode       = "GOVERNANCE"
+budget_limit_amount    = "5.0"
+enable_budget          = true
