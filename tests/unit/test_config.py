@@ -2,8 +2,8 @@
 
 import os
 from pathlib import Path
-import pytest
-from agent.config import AgentConfig, ChannelConfig, load_config, _expand_env_vars
+
+from agent.config import AgentConfig, ChannelConfig, _expand_env_vars, load_config
 
 
 def test_channel_config_xpath_building():

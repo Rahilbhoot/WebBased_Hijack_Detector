@@ -5,8 +5,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import yaml
 
+import yaml
 
 ENV_VAR_PATTERN = re.compile(r"\$\{([^}:]+)(?::-([^}]*))?\}")
 
@@ -28,7 +28,7 @@ def _expand_env_vars(val: Any) -> Any:
 
 
 def _load_dotenv_if_present(base_dir: Path) -> None:
-    """Simple parser to load .env from project root or base_dir into os.environ if not already set."""
+    """Loads .env from project root or base_dir into os.environ if not already set."""
     search_dirs = [base_dir, base_dir.parent, Path.cwd()]
     for d in search_dirs:
         env_file = d / ".env"

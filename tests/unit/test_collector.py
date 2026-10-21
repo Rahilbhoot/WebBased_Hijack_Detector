@@ -1,13 +1,9 @@
 """Unit tests for agent/collector.py."""
 
-import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-import pytest
 
 from agent.collector import BookmarkManager, EventCollector, EventParser
 from agent.config import AgentConfig, ChannelConfig
-
 
 # Sample Windows Event XML for Sysmon Event 1 (Process Create)
 SAMPLE_SYSMON_XML = """<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
@@ -31,7 +27,7 @@ SAMPLE_SYSMON_XML = """<Event xmlns="http://schemas.microsoft.com/win/2004/08/ev
     <Data Name="ProcessGuid">{A1B2C3D4-E5F6-7890-1234-56789ABCDEF0}</Data>
     <Data Name="ProcessId">4128</Data>
     <Data Name="Image">C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe</Data>
-    <Data Name="CommandLine">"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --proxy-server=127.0.0.1:9999</Data>
+    <Data Name="CommandLine">"chrome.exe" --proxy-server=127.0.0.1:9999</Data>
     <Data Name="CurrentDirectory">C:\\Users\\Student\\Desktop\\</Data>
     <Data Name="User">LAB\\Student</Data>
     <Data Name="ParentProcessId">2104</Data>
@@ -168,4 +164,8 @@ class TestEventCollectorQueryBuilding:
 
         ch = ChannelConfig(name="Security", event_ids=[4688, 4698, 1102])
         xpath = collector.build_query_for_channel(ch)
-        assert xpath == "*[System[EventRecordID > 5000 and (EventID=4688 or EventID=4698 or EventID=1102)]]"
+        expected = (
+            "*[System[EventRecordID > 5000 and "
+            "(EventID=4688 or EventID=4698 or EventID=1102)]]"
+        )
+        assert xpath == expected

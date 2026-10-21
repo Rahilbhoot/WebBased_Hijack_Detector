@@ -4,6 +4,8 @@ Collects events from Sysmon, Security, System, and PowerShell event channels,
 filters by Event ID, persists bookmarks across restarts, and handles errors gracefully.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -11,19 +13,14 @@ import sys
 import tempfile
 import time
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
-
-# Ensure project root is on sys.path if run directly
-project_root = Path(__file__).resolve().parent.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
+from typing import Any, Callable, Dict, List, Optional, Set
 
 # Attempt import of win32evtlog; handled gracefully on non-Windows/mock setups
 try:
-    import win32evtlog  # type: ignore
     import pywintypes  # type: ignore
+    import win32evtlog  # type: ignore
+
     HAS_WIN32EVTLOG = True
 except ImportError:
     win32evtlog = None
@@ -62,7 +59,8 @@ class BookmarkManager:
                     self.bookmarks = {}
         except Exception as e:
             self.log.warning(
-                f"Corrupt bookmark file at {self.bookmark_path}: {e}. Backing up and starting fresh."
+                f"Corrupt bookmark file at {self.bookmark_path}: {e}. "
+                "Backing up and starting fresh."
             )
             try:
                 backup_path = self.bookmark_path.with_suffix(".corrupt.bak")
@@ -207,7 +205,7 @@ class EventCollector:
         self.bookmarks = bookmark_manager or BookmarkManager(
             self.config.bookmark_file, logger_instance=self.log
         )
-        self.missing_channels_warned: set[str] = set()
+        self.missing_channels_warned: Set[str] = set()
 
     def get_latest_record_id(self, channel: str) -> Optional[int]:
         """Queries the latest event in a channel to find the current highest EventRecordID."""
@@ -225,7 +223,7 @@ class EventCollector:
                 xml_content = win32evtlog.EvtRender(events[0], win32evtlog.EvtRenderEventXml)
                 parsed = EventParser.parse_xml(xml_content)
                 if parsed and parsed.get("EventRecordID"):
-                    return parsed["EventRecordID"]
+                    return int(parsed["EventRecordID"])
         except Exception as e:
             self.log.debug(f"Unable to query latest record ID for channel '{channel}': {e}")
         return None
@@ -233,7 +231,9 @@ class EventCollector:
     def build_query_for_channel(self, channel_cfg: ChannelConfig) -> str:
         """Builds XPath query including both EventRecordID bookmark and EventIDs."""
         last_id = self.bookmarks.get_last_record_id(channel_cfg.name)
-        id_clauses = [f"EventID={eid}" for eid in channel_cfg.event_ids] if channel_cfg.event_ids else []
+        id_clauses = (
+            [f"EventID={eid}" for eid in channel_cfg.event_ids] if channel_cfg.event_ids else []
+        )
 
         conditions = []
         if last_id is not None and last_id > 0:
@@ -252,7 +252,9 @@ class EventCollector:
     ) -> List[Dict[str, Any]]:
         """Collects new events from a single channel since the last bookmark."""
         if not HAS_WIN32EVTLOG:
-            self.log.debug("win32evtlog is not available (non-Windows platform or test environment).")
+            self.log.debug(
+                "win32evtlog is not available (non-Windows platform or test environment)."
+            )
             return []
 
         # If this channel has never been bookmarked, initialize bookmark to current head
@@ -261,7 +263,8 @@ class EventCollector:
             latest_id = self.get_latest_record_id(channel_cfg.name)
             if latest_id is not None:
                 self.log.info(
-                    f"First run for channel '{channel_cfg.name}': bookmarking current record ID {latest_id}."
+                    f"First run for channel '{channel_cfg.name}': "
+                    f"bookmarking current record ID {latest_id}."
                 )
                 self.bookmarks.update(channel_cfg.name, latest_id)
                 self.bookmarks.save()
@@ -282,17 +285,21 @@ class EventCollector:
                 xpath,
             )
         except Exception as e:
-            err_code = getattr(e, "winerror", None) or (e.args[0] if getattr(e, "args", None) else None)
+            err_code = getattr(e, "winerror", None) or (
+                e.args[0] if getattr(e, "args", None) else None
+            )
             if err_code == 15007:  # ERROR_EVT_CHANNEL_NOT_FOUND
                 if channel_cfg.name not in self.missing_channels_warned:
                     self.log.warning(
-                        f"Channel '{channel_cfg.name}' not found on this machine (e.g. Sysmon not installed). Skipping."
+                        f"Channel '{channel_cfg.name}' not found on this machine "
+                        "(e.g. Sysmon not installed). Skipping."
                     )
                     self.missing_channels_warned.add(channel_cfg.name)
             elif err_code == 5:  # ERROR_ACCESS_DENIED
                 if channel_cfg.name not in self.missing_channels_warned:
                     self.log.warning(
-                        f"Access denied to channel '{channel_cfg.name}'. Administrator privileges required to read this log."
+                        f"Access denied to channel '{channel_cfg.name}'. "
+                        "Administrator privileges required to read this log."
                     )
                     self.missing_channels_warned.add(channel_cfg.name)
             else:
@@ -314,7 +321,9 @@ class EventCollector:
                 except Exception as parse_err:
                     self.log.warning(f"Error rendering event XML: {parse_err}")
         except Exception as read_err:
-            self.log.error(f"Error retrieving events from channel '{channel_cfg.name}': {read_err}")
+            self.log.error(
+                f"Error retrieving events from channel '{channel_cfg.name}': {read_err}"
+            )
 
         # Update bookmark if new events were collected
         if highest_record_id > (self.bookmarks.get_last_record_id(channel_cfg.name) or 0):
@@ -331,7 +340,10 @@ class EventCollector:
             all_events.extend(events)
 
         if all_events:
-            self.log.info(f"Collected {len(all_events)} new event(s) across {len(self.config.channels)} channel(s).")
+            self.log.info(
+                f"Collected {len(all_events)} new event(s) across "
+                f"{len(self.config.channels)} channel(s)."
+            )
             self.bookmarks.save()
 
         return all_events
@@ -367,6 +379,11 @@ class EventCollector:
 
 
 if __name__ == "__main__":
+    # Ensure project root is in sys.path when executed directly
+    root_path = Path(__file__).resolve().parent.parent
+    if str(root_path) not in sys.path:
+        sys.path.insert(0, str(root_path))
+
     # Quick standalone test execution
     cfg = load_config()
     print(f"Device ID: {cfg.device_id}")
@@ -375,7 +392,11 @@ if __name__ == "__main__":
 
     def print_events(evts: List[Dict[str, Any]]) -> None:
         for ev in evts:
-            print(f"[{ev['Channel']}] EventID={ev['EventID']} RecordID={ev['EventRecordID']} Time={ev['TimeCreated']}")
+            ch_name = ev["Channel"]
+            eid = ev["EventID"]
+            rid = ev["EventRecordID"]
+            tc = ev["TimeCreated"]
+            print(f"[{ch_name}] EventID={eid} RecordID={rid} Time={tc}")
 
     print("Running single collection batch...")
     batch = collector.collect_batch()
