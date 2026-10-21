@@ -1,5 +1,6 @@
 """Configuration loader for the Windows endpoint agent."""
 
+import dataclasses
 import os
 import re
 from dataclasses import dataclass, field
@@ -83,8 +84,12 @@ class AgentConfig:
     log_backup_count: int = 3
     log_level: str = "INFO"
     standalone_mode: bool = False
-    rules_file: Path = Path("../rules/rules.yaml")
-    whitelist_file: Path = Path("../rules/whitelist.yaml")
+    rules_file: Path = dataclasses.field(
+        default_factory=lambda: Path(__file__).resolve().parent.parent / "rules" / "rules.yaml"
+    )
+    whitelist_file: Path = dataclasses.field(
+        default_factory=lambda: Path(__file__).resolve().parent.parent / "rules" / "whitelist.yaml"
+    )
 
 
 def load_config(config_path: Optional[Path] = None) -> AgentConfig:
