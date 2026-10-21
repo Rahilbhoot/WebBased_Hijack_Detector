@@ -1,0 +1,14 @@
+{
+  "Channel": "Security",
+  "EventID": 4688,
+  "EventRecordID": 2001,
+  "TimeCreated": "2026-10-21T10:33:00.0000000Z",
+  "Computer": "PC-LAB-01",
+  "EventData": {
+    "NewProcessName": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "CommandLine": "\"msedge.exe\" --load-extension=C:\\malicious_ext",
+    "ParentProcessName": "C:\\Windows\\explorer.exe",
+    "SubjectUserName": "Student",
+    "SubjectDomainName": "LAB"
+  }
+}

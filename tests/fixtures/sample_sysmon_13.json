@@ -1,0 +1,13 @@
+{
+  "Channel": "Microsoft-Windows-Sysmon/Operational",
+  "EventID": 13,
+  "EventRecordID": 1003,
+  "TimeCreated": "2026-10-21T10:32:00Z",
+  "Computer": "PC-LAB-01",
+  "EventData": {
+    "TargetObject": "HKLM\\SOFTWARE\\Policies\\Google\\Chrome\\HomepageLocation",
+    "Details": "http://malicious-search.example.com",
+    "Image": "C:\\Windows\\regedit.exe",
+    "User": "LAB\\Student"
+  }
+}

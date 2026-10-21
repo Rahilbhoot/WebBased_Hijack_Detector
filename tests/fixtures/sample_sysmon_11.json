@@ -1,0 +1,12 @@
+{
+  "Channel": "Microsoft-Windows-Sysmon/Operational",
+  "EventID": 11,
+  "EventRecordID": 1002,
+  "TimeCreated": "2026-10-21T10:31:00Z",
+  "Computer": "PC-LAB-01",
+  "EventData": {
+    "TargetFilename": "C:\\Windows\\System32\\drivers\\etc\\hosts",
+    "Image": "C:\\Windows\\System32\\notepad.exe",
+    "User": "LAB\\Student"
+  }
+}

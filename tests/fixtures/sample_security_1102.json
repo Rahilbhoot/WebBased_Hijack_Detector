@@ -1,0 +1,11 @@
+{
+  "Channel": "Security",
+  "EventID": 1102,
+  "EventRecordID": 2003,
+  "TimeCreated": "2026-10-21T10:35:00Z",
+  "Computer": "PC-LAB-01",
+  "EventData": {
+    "SubjectUserName": "AttackerUser",
+    "SubjectDomainName": "LAB"
+  }
+}

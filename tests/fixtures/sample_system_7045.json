@@ -1,0 +1,12 @@
+{
+  "Channel": "System",
+  "EventID": 7045,
+  "EventRecordID": 3001,
+  "TimeCreated": "2026-10-21T10:36:00Z",
+  "Computer": "PC-LAB-01",
+  "EventData": {
+    "ServiceName": "BrowserHelperService",
+    "ImagePath": "C:\\ProgramData\\updater.exe --service",
+    "AccountName": "LocalSystem"
+  }
+}

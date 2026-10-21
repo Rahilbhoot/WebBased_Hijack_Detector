@@ -1,0 +1,13 @@
+{
+  "Channel": "Security",
+  "EventID": 4698,
+  "EventRecordID": 2002,
+  "TimeCreated": "2026-10-21T10:34:00Z",
+  "Computer": "PC-LAB-01",
+  "EventData": {
+    "TaskName": "\\BrowserSearchRedirect",
+    "TaskContent": "<Task xmlns='http://schemas.microsoft.com/windows/2004/02/mit/task'><Actions><Exec><Command>powershell.exe</Command><Arguments>-WindowStyle Hidden -Enc aGVsbG8=</Arguments></Exec></Actions></Task>",
+    "SubjectUserName": "SYSTEM",
+    "SubjectDomainName": "NT AUTHORITY"
+  }
+}

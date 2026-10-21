@@ -1,0 +1,13 @@
+{
+  "Channel": "Microsoft-Windows-Sysmon/Operational",
+  "EventID": 1,
+  "EventRecordID": 1001,
+  "TimeCreated": "2026-10-21T10:30:15.1234567Z",
+  "Computer": "PC-LAB-01",
+  "EventData": {
+    "Image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "CommandLine": "\"chrome.exe\" --proxy-server=127.0.0.1:9999",
+    "ParentImage": "C:\\Users\\Student\\AppData\\Local\\Temp\\evil.exe",
+    "User": "LAB\\Student"
+  }
+}
