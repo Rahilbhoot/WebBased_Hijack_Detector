@@ -1,0 +1,47 @@
+# ==========================================
+# Browser Hijack Detector - Agent Config
+# ==========================================
+
+device_id: "${DEVICE_ID:-PC-LAB-01}"
+api_endpoint: "${API_ENDPOINT:-}"
+api_key: "${API_KEY:-}"
+
+# Windows Event Log channels and IDs to monitor
+channels:
+  - name: "Microsoft-Windows-Sysmon/Operational"
+    event_ids: [1, 11, 12, 13, 14]
+    description: "ProcessCreate, FileCreate, RegistryEvent"
+
+  - name: "Security"
+    event_ids: [4688, 4698, 1102]
+    description: "ProcessCreation, ScheduledTaskCreated, AuditLogCleared"
+
+  - name: "System"
+    event_ids: [7045]
+    description: "ServiceInstalled"
+
+  - name: "Microsoft-Windows-PowerShell/Operational"
+    event_ids: [4104]
+    description: "ScriptBlockLogging"
+
+# Polling and batching intervals
+poll_interval_seconds: 5
+batch_size: 100
+batch_interval_seconds: 30
+heartbeat_interval_seconds: 120
+
+# File storage paths (relative to agent root or absolute)
+bookmark_file: "./data/bookmarks.json"
+queue_file: "./data/queue.sqlite"
+local_db_file: "./data/local_alerts.sqlite"
+
+# Logging configuration
+log_file: "./logs/agent.log"
+log_max_bytes: 5242880  # 5 MB
+log_backup_count: 3
+log_level: "INFO"
+
+# Standalone offline mode
+standalone_mode: false
+rules_file: "../rules/rules.yaml"
+whitelist_file: "../rules/whitelist.yaml"

@@ -43,6 +43,8 @@ htmlcov/
 # Agent local data & logs
 agent/data/
 agent/logs/
+data/
+logs/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
