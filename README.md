@@ -349,3 +349,4 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 ## 9. Team
 1. RahilBhoot
 2. AnujBansal
+3. Arth Shah
