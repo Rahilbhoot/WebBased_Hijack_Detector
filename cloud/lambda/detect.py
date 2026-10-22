@@ -21,6 +21,12 @@ from boto3.dynamodb.conditions import Key
 try:
     from shared.correlator import EventCorrelator, parse_iso_utc
     from shared.models import Alert, NormalizedEvent
+    from shared.notifier import (
+        format_alert_email,
+        record_notification_sent,
+        send_telegram_alert,
+        should_throttle_notification,
+    )
     from shared.rule_engine import RuleEngine, calculate_severity
 except ImportError:
     import importlib
@@ -28,6 +34,7 @@ except ImportError:
     _corr = importlib.import_module("cloud.lambda.shared.correlator")
     _models = importlib.import_module("cloud.lambda.shared.models")
     _engine = importlib.import_module("cloud.lambda.shared.rule_engine")
+    _notif = importlib.import_module("cloud.lambda.shared.notifier")
 
     EventCorrelator = _corr.EventCorrelator
     parse_iso_utc = _corr.parse_iso_utc
@@ -35,6 +42,10 @@ except ImportError:
     NormalizedEvent = _models.NormalizedEvent
     RuleEngine = _engine.RuleEngine
     calculate_severity = _engine.calculate_severity
+    format_alert_email = _notif.format_alert_email
+    record_notification_sent = _notif.record_notification_sent
+    send_telegram_alert = _notif.send_telegram_alert
+    should_throttle_notification = _notif.should_throttle_notification
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -42,7 +53,10 @@ logger.setLevel(logging.INFO)
 CONFIG_BUCKET = os.environ.get("CONFIG_BUCKET", "hijackdet-dev-config")
 ALERTS_TABLE = os.environ.get("ALERTS_TABLE", "hijack-detector-dev-alerts")
 EVENT_HISTORY_TABLE = os.environ.get("EVENT_HISTORY_TABLE", "hijack-detector-dev-event-history")
+DEVICES_TABLE = os.environ.get("DEVICES_TABLE", "hijack-detector-dev-devices")
 SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 RULES_CACHE_TTL_SECONDS = 300  # 5 minutes
 
@@ -156,28 +170,22 @@ def check_alert_dedup(
     return None
 
 
-def publish_high_severity_alert(sns_client: Any, alert: Alert) -> bool:
-    """Formats and publishes High-severity alert notification to SNS topic."""
+def publish_high_severity_alert(sns_client: Any, alert: Alert, devices_table: Any = None) -> bool:
+    """Formats and publishes High-severity alert notification with anti-spam throttling."""
     if not SNS_TOPIC_ARN:
         logger.warning("SNS_TOPIC_ARN not configured, skipping email notification.")
         return False
 
-    subject = f"[HIGH] Browser Hijack Alert — {alert.device_id}"
-    rules_str = ", ".join(alert.rule_ids)
-    mitre_str = ", ".join(alert.mitre_ids) if alert.mitre_ids else "N/A"
+    # Check notification throttle (15 minutes per device+rule combo)
+    if devices_table and should_throttle_notification(
+        devices_table, alert.device_id, alert.rule_ids
+    ):
+        logger.info(
+            f"Notification suppressed by throttle for {alert.device_id} on {alert.rule_ids}"
+        )
+        return False
 
-    body = (
-        f"Browser Hijack Detector - High Severity Security Alert\n\n"
-        f"Device:    {alert.device_id}\n"
-        f"Timestamp: {alert.timestamp}\n"
-        f"Severity:  {alert.severity} (Score: {alert.score})\n"
-        f"Rules:     {rules_str}\n"
-        f"MITRE IDs: {mitre_str}\n\n"
-        f"Explanation:\n{alert.explanation}\n\n"
-        f"Event Type: {alert.raw_event.get('type')}\n"
-        f"Process:    {alert.raw_event.get('process_image')}\n"
-        f"Command:    {alert.raw_event.get('command_line')}\n"
-    )
+    subject, body = format_alert_email(alert)
 
     try:
         sns_client.publish(
@@ -186,6 +194,15 @@ def publish_high_severity_alert(sns_client: Any, alert: Alert) -> bool:
             Message=body,
         )
         logger.info(f"Published High-severity alert for {alert.device_id} to SNS.")
+
+        # Record notification timestamp for throttle
+        if devices_table:
+            record_notification_sent(devices_table, alert.device_id, alert.rule_ids)
+
+        # Dispatch optional Telegram alert
+        if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
+            send_telegram_alert(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, alert)
+
         return True
     except Exception as e:
         logger.error(f"Failed to publish alert to SNS: {e}")
@@ -228,6 +245,7 @@ def handler(
     dyn = dynamodb_resource or get_dynamodb_resource()
     alerts_table = dyn.Table(ALERTS_TABLE)
     history_table = dyn.Table(EVENT_HISTORY_TABLE)
+    devices_table = dyn.Table(DEVICES_TABLE)
     sns = sns_client or get_sns_client()
 
     # 2. Replay recent history for correlation
@@ -348,7 +366,7 @@ def handler(
         # 6. Publish High-severity alerts to SNS
         if severity == "High":
             high_count += 1
-            publish_high_severity_alert(sns, alert_obj)
+            publish_high_severity_alert(sns, alert_obj, devices_table=devices_table)
 
     return {
         "status": "processed",

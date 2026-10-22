@@ -290,3 +290,123 @@ resource "aws_lambda_permission" "api_gateway_ingest" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*/events"
 }
+
+# ------------------------------------------
+# 4. Heartbeat Lambda & IAM
+# ------------------------------------------
+resource "aws_iam_role" "heartbeat" {
+  name               = "${var.project_name}-${var.environment}-heartbeat-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "heartbeat_basic" {
+  role       = aws_iam_role.heartbeat.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_policy" "heartbeat_policy" {
+  name        = "${var.project_name}-${var.environment}-heartbeat-policy"
+  description = "Permissions for Heartbeat Lambda to update devices and publish silence alerts to SNS"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:Scan",
+          "dynamodb:Query"
+        ]
+        Resource = [
+          aws_dynamodb_table.devices.arn,
+          "${aws_dynamodb_table.devices.arn}/index/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sns:Publish"
+        ]
+        Resource = aws_sns_topic.alerts.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "heartbeat_custom" {
+  role       = aws_iam_role.heartbeat.name
+  policy_arn = aws_iam_policy.heartbeat_policy.arn
+}
+
+resource "aws_lambda_function" "heartbeat" {
+  function_name    = "${var.project_name}-${var.environment}-heartbeat"
+  role             = aws_iam_role.heartbeat.arn
+  handler          = "heartbeat.handler"
+  runtime          = "python3.11"
+  filename         = data.archive_file.lambda_bundle.output_path
+  source_code_hash = data.archive_file.lambda_bundle.output_base64sha256
+  timeout          = 30
+  memory_size      = 256
+
+  environment {
+    variables = {
+      DEVICES_TABLE_NAME        = aws_dynamodb_table.devices.name
+      SNS_TOPIC_ARN             = aws_sns_topic.alerts.arn
+      SILENCE_THRESHOLD_SECONDS = "600"
+    }
+  }
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-heartbeat"
+  }
+}
+
+# --- Heartbeat API Gateway Route ---
+resource "aws_apigatewayv2_integration" "heartbeat" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.heartbeat.invoke_arn
+  integration_method     = "POST"
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "post_heartbeat" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "POST /heartbeat"
+  target             = "integrations/${aws_apigatewayv2_integration.heartbeat.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.device_auth.id
+}
+
+resource "aws_lambda_permission" "api_gateway_heartbeat" {
+  statement_id  = "AllowAPIGatewayHeartbeatInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.heartbeat.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*/heartbeat"
+}
+
+# ------------------------------------------
+# EventBridge Silence Checker Schedule
+# ------------------------------------------
+resource "aws_cloudwatch_event_rule" "silence_check" {
+  name                = "${var.project_name}-${var.environment}-silence-check"
+  description         = "Periodic silence detection checking for offline agents every 5 minutes"
+  schedule_expression = "rate(5 minutes)"
+}
+
+resource "aws_cloudwatch_event_target" "silence_check" {
+  rule      = aws_cloudwatch_event_rule.silence_check.name
+  target_id = "TriggerHeartbeatSilenceCheck"
+  arn       = aws_lambda_function.heartbeat.arn
+}
+
+resource "aws_lambda_permission" "eventbridge_heartbeat" {
+  statement_id  = "AllowEventBridgeHeartbeatInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.heartbeat.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.silence_check.arn
+}

@@ -99,3 +99,8 @@ output "lambda_detect_arn" {
   value       = aws_lambda_function.detect.arn
 }
 
+output "lambda_heartbeat_arn" {
+  description = "ARN of the Heartbeat and Silence Detection Lambda"
+  value       = aws_lambda_function.heartbeat.arn
+}
+
