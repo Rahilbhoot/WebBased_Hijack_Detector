@@ -196,9 +196,7 @@ def test_sender_offline_buffering(tmp_path: Path):
     )
 
     # Mock network connection error
-    with patch.object(
-        sender.session, "post", side_effect=Exception("Connection refused")
-    ):
+    with patch.object(sender.session, "post", side_effect=Exception("Connection refused")):
         success = sender.send_events([ev])
         assert success is False
 

@@ -165,7 +165,6 @@ class TestEventCollectorQueryBuilding:
         ch = ChannelConfig(name="Security", event_ids=[4688, 4698, 1102])
         xpath = collector.build_query_for_channel(ch)
         expected = (
-            "*[System[EventRecordID > 5000 and "
-            "(EventID=4688 or EventID=4698 or EventID=1102)]]"
+            "*[System[EventRecordID > 5000 and (EventID=4688 or EventID=4698 or EventID=1102)]]"
         )
         assert xpath == expected

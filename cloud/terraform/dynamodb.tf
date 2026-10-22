@@ -55,6 +55,17 @@ resource "aws_dynamodb_table" "devices" {
     type = "S"
   }
 
+  attribute {
+    name = "api_key_hash"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "ApiKeyHashIndex"
+    hash_key        = "api_key_hash"
+    projection_type = "ALL"
+  }
+
   point_in_time_recovery {
     enabled = true
   }

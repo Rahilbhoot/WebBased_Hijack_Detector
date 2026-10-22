@@ -69,9 +69,7 @@ def test_normalize_security_4688():
 
     assert event is not None
     assert event.type == "process_create"
-    expected_image = (
-        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
-    )
+    expected_image = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
     assert event.process_image == expected_image
     assert event.command_line == '"msedge.exe" --load-extension=C:\\malicious_ext'
     assert event.parent_image == "C:\\Windows\\explorer.exe"

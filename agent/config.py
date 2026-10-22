@@ -15,6 +15,7 @@ ENV_VAR_PATTERN = re.compile(r"\$\{([^}:]+)(?::-([^}]*))?\}")
 def _expand_env_vars(val: Any) -> Any:
     """Recursively expands ${VAR:-default} and ${VAR} patterns in strings, lists, and dicts."""
     if isinstance(val, str):
+
         def repl(match: re.Match) -> str:
             var_name = match.group(1)
             default_val = match.group(2) if match.group(2) is not None else ""
@@ -53,6 +54,7 @@ def _load_dotenv_if_present(base_dir: Path) -> None:
 @dataclass
 class ChannelConfig:
     """Configuration for a specific Windows Event Log channel."""
+
     name: str
     event_ids: List[int] = field(default_factory=list)
     description: str = ""
@@ -68,6 +70,7 @@ class ChannelConfig:
 @dataclass
 class AgentConfig:
     """Full runtime configuration for the Windows endpoint agent."""
+
     device_id: str = "PC-LAB-01"
     api_endpoint: str = ""
     api_key: str = ""

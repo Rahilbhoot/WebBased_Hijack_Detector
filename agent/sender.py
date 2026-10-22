@@ -64,9 +64,7 @@ class EventSender:
 
             # 202 Accepted (standard) or 200 OK
             if resp.status_code in (200, 202):
-                logger.info(
-                    f"Successfully transmitted {len(events)} event(s) to cloud ingestion."
-                )
+                logger.info(f"Successfully transmitted {len(events)} event(s) to cloud ingestion.")
                 # After successful send, try draining pending outbox queue
                 self.drain_outbox()
                 return True
@@ -107,9 +105,7 @@ class EventSender:
         if not pending:
             return 0
 
-        logger.info(
-            f"Attempting to drain {len(pending)} buffered batch(es) from offline outbox..."
-        )
+        logger.info(f"Attempting to drain {len(pending)} buffered batch(es) from offline outbox...")
         url = f"{self.config.api_endpoint.rstrip('/')}/events"
         headers = {
             "Content-Type": "application/json",

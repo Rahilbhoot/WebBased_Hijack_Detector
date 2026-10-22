@@ -114,8 +114,7 @@ class DetectionRule:
         event_dict = event.to_dict()
         # Replace empty values with 'N/A' for formatting
         safe_dict = {
-            k: (v if v is not None and str(v).strip() else "N/A")
-            for k, v in event_dict.items()
+            k: (v if v is not None and str(v).strip() else "N/A") for k, v in event_dict.items()
         }
 
         try:

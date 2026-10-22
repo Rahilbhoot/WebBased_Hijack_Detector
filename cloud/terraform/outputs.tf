@@ -82,3 +82,20 @@ output "admin_secret_arn" {
   description = "ARN of the master enrollment secret in Secrets Manager"
   value       = aws_secretsmanager_secret.admin_secret.arn
 }
+
+# --- Lambda Functions ---
+output "lambda_authorizer_arn" {
+  description = "ARN of the Device Authorizer Lambda"
+  value       = aws_lambda_function.authorizer.arn
+}
+
+output "lambda_ingest_arn" {
+  description = "ARN of the Event Ingestion Lambda"
+  value       = aws_lambda_function.ingest.arn
+}
+
+output "lambda_detect_arn" {
+  description = "ARN of the Detection Lambda"
+  value       = aws_lambda_function.detect.arn
+}
+

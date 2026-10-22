@@ -220,7 +220,8 @@ class EventCorrelator:
                     # Check if ANY prior BH rule (other than BH007) fired within the window
                     prior_detections = any(
                         any(r != "BH007" for r in rec.rule_ids)
-                        and 0 <= (current_dt - rec.timestamp).total_seconds()
+                        and 0
+                        <= (current_dt - rec.timestamp).total_seconds()
                         <= cr.time_window_seconds
                         for rec in dev_history
                     )

@@ -271,9 +271,7 @@ class LocalStore:
                     "Pruning oldest queued batches to prevent disk exhaustion."
                 )
                 while current_total + event_count > self.max_outbox_events:
-                    cursor.execute(
-                        "SELECT id, event_count FROM outbox ORDER BY id ASC LIMIT 1;"
-                    )
+                    cursor.execute("SELECT id, event_count FROM outbox ORDER BY id ASC LIMIT 1;")
                     oldest = cursor.fetchone()
                     if not oldest:
                         break
@@ -306,14 +304,16 @@ class LocalStore:
         items: List[Dict[str, Any]] = []
         for r in rows:
             try:
-                items.append({
-                    "id": r["id"],
-                    "batch_id": r["batch_id"],
-                    "payload": json.loads(r["payload"]),
-                    "event_count": r["event_count"],
-                    "retry_count": r["retry_count"],
-                    "created_at": r["created_at"],
-                })
+                items.append(
+                    {
+                        "id": r["id"],
+                        "batch_id": r["batch_id"],
+                        "payload": json.loads(r["payload"]),
+                        "event_count": r["event_count"],
+                        "retry_count": r["retry_count"],
+                        "created_at": r["created_at"],
+                    }
+                )
             except Exception as e:
                 logger.error(f"Error reading outbox item {r['id']}: {e}")
 

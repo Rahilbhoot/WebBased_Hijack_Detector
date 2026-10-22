@@ -324,9 +324,7 @@ class EventCollector:
                 except Exception as parse_err:
                     self.log.warning(f"Error rendering event XML: {parse_err}")
         except Exception as read_err:
-            self.log.error(
-                f"Error retrieving events from channel '{channel_cfg.name}': {read_err}"
-            )
+            self.log.error(f"Error retrieving events from channel '{channel_cfg.name}': {read_err}")
 
         # Update bookmark if new events were collected
         if highest_record_id > (self.bookmarks.get_last_record_id(channel_cfg.name) or 0):

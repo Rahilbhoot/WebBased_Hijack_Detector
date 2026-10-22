@@ -6,9 +6,7 @@ from agent.correlator import EventCorrelator
 from agent.models import NormalizedEvent
 
 CORRELATIONS_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "rules"
-    / "correlation_rules.yaml"
+    Path(__file__).resolve().parent.parent.parent / "rules" / "correlation_rules.yaml"
 )
 
 
