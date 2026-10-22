@@ -135,3 +135,66 @@ resource "aws_s3_object" "correlation_rules" {
   etag         = filemd5("${path.module}/../../rules/correlation_rules.yaml")
   content_type = "application/x-yaml"
 }
+
+# ------------------------------------------
+# Access Logs Bucket (Task 13.7)
+# ------------------------------------------
+resource "aws_s3_bucket" "access_logs" {
+  bucket        = "hijackdet-${var.environment}-accesslogs-${random_id.suffix.hex}"
+  force_destroy = true
+}
+
+resource "aws_s3_bucket_versioning" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_ownership_controls" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "access_logs" {
+  depends_on = [aws_s3_bucket_ownership_controls.access_logs]
+  bucket     = aws_s3_bucket.access_logs.id
+  acl        = "log-delivery-write"
+}
+
+# Enable Server Access Logging on Raw Logs Bucket
+resource "aws_s3_bucket_logging" "raw_logs" {
+  bucket        = aws_s3_bucket.raw_logs.id
+  target_bucket = aws_s3_bucket.access_logs.id
+  target_prefix = "raw-logs/"
+}
+
+# Enable Server Access Logging on Config Bucket
+resource "aws_s3_bucket_logging" "config" {
+  bucket        = aws_s3_bucket.config.id
+  target_bucket = aws_s3_bucket.access_logs.id
+  target_prefix = "config/"
+}

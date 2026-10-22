@@ -179,6 +179,15 @@ class RuleEngine:
         if whitelist_path:
             self.load_whitelist(whitelist_path)
 
+    @classmethod
+    def from_yaml(
+        cls,
+        rules_path: Optional[Union[str, Path]] = None,
+        whitelist_path: Optional[Union[str, Path]] = None,
+    ) -> RuleEngine:
+        """Constructs a RuleEngine instance from rules and whitelist YAML paths."""
+        return cls(rules_path=rules_path, whitelist_path=whitelist_path)
+
     def load_rules(self, rules_path: Union[str, Path]) -> None:
         """Loads and parses detection rules from a YAML file."""
         path = Path(rules_path).resolve()

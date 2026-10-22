@@ -49,3 +49,9 @@ variable "enable_budget" {
   description = "Set to true to create an AWS Cost Budget alarm"
   default     = true
 }
+
+variable "github_repo" {
+  type        = string
+  description = "GitHub repository (owner/repo) permitted to deploy via OIDC"
+  default     = "Rahilbhoot/WebBased_Hijack_Detector"
+}

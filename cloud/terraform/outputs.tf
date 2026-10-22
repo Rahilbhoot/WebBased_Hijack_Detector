@@ -115,4 +115,10 @@ output "dashboard_website_url" {
   value       = "http://${aws_s3_bucket_website_configuration.dashboard.website_endpoint}"
 }
 
+# --- GitHub Actions OIDC (Task 13.4) ---
+output "github_actions_role_arn" {
+  description = "IAM role ARN assumed by GitHub Actions via OIDC"
+  value       = aws_iam_role.github_actions_deploy.arn
+}
+
 

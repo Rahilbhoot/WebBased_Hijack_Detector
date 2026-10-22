@@ -349,6 +349,10 @@ class EventCollector:
 
         return all_events
 
+    def collect_all(self) -> List[Dict[str, Any]]:
+        """Convenience alias for collect_batch()."""
+        return self.collect_batch()
+
     def run(
         self,
         callback: Optional[Callable[[List[Dict[str, Any]]], None]] = None,
@@ -377,6 +381,9 @@ class EventCollector:
             self.log.info("Keyboard interrupt received. Shutting down collector.")
         finally:
             self.bookmarks.save()
+
+
+XPathCollector = EventCollector
 
 
 if __name__ == "__main__":

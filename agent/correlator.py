@@ -236,3 +236,6 @@ class EventCorrelator:
                         )
 
         return matches
+
+
+Correlator = EventCorrelator
