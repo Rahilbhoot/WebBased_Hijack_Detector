@@ -147,9 +147,9 @@ def load_recent_event_history(
 
 
 def check_alert_dedup(
-    alerts_table: Any, device_id: str, rule_ids: List[str], window_minutes: int = 15
+    alerts_table: Any, device_id: str, rule_ids: List[str], window_minutes: int = 2
 ) -> Optional[Dict[str, Any]]:
-    """Checks if a matching alert for this device and rule set was generated in the last 15 min."""
+    """Checks if a matching alert for this device and rule set was generated in the last N min."""
     since_dt = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
     start_key = since_dt.isoformat()
     target_rule_set = set(rule_ids)
@@ -308,8 +308,9 @@ def handler(
         severity = calculate_severity(total_score)
         full_explanation = "\n\n".join(explanations)
 
-        # 4. Alert deduplication check (15 min window)
-        existing_alert = check_alert_dedup(alerts_table, device_id, rule_ids, window_minutes=15)
+        # 4. Alert deduplication check (2 min window)
+        dedup_win = int(os.environ.get("DEDUP_WINDOW_MINUTES", "2"))
+        existing_alert = check_alert_dedup(alerts_table, device_id, rule_ids, window_minutes=dedup_win)
         if existing_alert:
             logger.info(
                 f"Deduplicated alert for {device_id} on rules {rule_ids}. "

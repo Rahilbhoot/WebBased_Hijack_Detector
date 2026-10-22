@@ -139,7 +139,8 @@ class WhitelistConfig:
     def is_suppressed(self, event: NormalizedEvent, rule_id: Optional[str] = None) -> bool:
         """Checks if an event or specific rule match should be suppressed by whitelist."""
         # 1. Path whitelist applies to process_image (the executing binary), not target files
-        if event.process_image:
+        # Note: Do NOT suppress BH001 on path whitelist as BH001 monitors browsers launched with hijack flags
+        if rule_id != "BH001" and event.process_image:
             path_norm = event.process_image.replace("/", "\\").lower()
             for pattern in self.trusted_paths:
                 pattern_norm = pattern.replace("/", "\\").lower()

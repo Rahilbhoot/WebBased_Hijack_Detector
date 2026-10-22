@@ -284,7 +284,11 @@ export const apiClient = {
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
-    return await res.json();
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || data.message || `Server returned HTTP ${res.status}`);
+    }
+    return data;
   },
 
   async revokeDeviceKey(deviceId) {

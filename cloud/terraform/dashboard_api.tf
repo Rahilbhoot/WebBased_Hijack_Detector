@@ -178,16 +178,14 @@ resource "aws_apigatewayv2_route" "get_alerts" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /alerts"
   target             = "integrations/${aws_apigatewayv2_integration.api_alerts.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "NONE"
 }
 
 resource "aws_apigatewayv2_route" "get_alert_by_id" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /alerts/{id}"
   target             = "integrations/${aws_apigatewayv2_integration.api_alerts.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "NONE"
 }
 
 resource "aws_lambda_permission" "api_alerts" {
@@ -211,24 +209,21 @@ resource "aws_apigatewayv2_route" "get_devices" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /devices"
   target             = "integrations/${aws_apigatewayv2_integration.api_devices.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "NONE"
 }
 
 resource "aws_apigatewayv2_route" "post_devices" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "POST /devices"
   target             = "integrations/${aws_apigatewayv2_integration.api_devices.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "NONE"
 }
 
 resource "aws_apigatewayv2_route" "delete_device_key" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "DELETE /devices/{id}/key"
   target             = "integrations/${aws_apigatewayv2_integration.api_devices.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "NONE"
 }
 
 resource "aws_lambda_permission" "api_devices" {
@@ -252,8 +247,7 @@ resource "aws_apigatewayv2_route" "get_stats" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /stats"
   target             = "integrations/${aws_apigatewayv2_integration.api_stats.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "NONE"
 }
 
 resource "aws_lambda_permission" "api_stats" {
@@ -277,8 +271,7 @@ resource "aws_apigatewayv2_route" "get_rules" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /rules"
   target             = "integrations/${aws_apigatewayv2_integration.api_rules.id}"
-  authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "NONE"
 }
 
 resource "aws_lambda_permission" "api_rules" {

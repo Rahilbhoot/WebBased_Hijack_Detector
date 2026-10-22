@@ -19,10 +19,22 @@ from typing import Any, Dict
 
 import boto3
 
+from decimal import Decimal
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 DEVICES_TABLE = os.environ.get("DEVICES_TABLE", "hijack-detector-dev-devices")
+
+
+def decimal_default(obj: Any) -> Any:
+    if isinstance(obj, Decimal):
+        return int(obj) if obj % 1 == 0 else float(obj)
+    if isinstance(obj, (datetime, )):
+        return obj.isoformat()
+    if isinstance(obj, set):
+        return list(obj)
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 
 def get_dynamodb_resource():
@@ -38,7 +50,7 @@ def json_response(status_code: int, body: Any) -> Dict[str, Any]:
             "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
         },
-        "body": json.dumps(body),
+        "body": json.dumps(body, default=decimal_default),
     }
 
 

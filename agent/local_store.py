@@ -179,9 +179,34 @@ class LocalStore:
     # Alert Operations
     # ---------------------------------------------------------
 
-    def insert_alert(self, alert: Alert) -> None:
+    def save_alert(self, alert: Union[Alert, Dict[str, Any]]) -> None:
+        """Alias for insert_alert supporting both Alert objects and dictionaries."""
+        self.insert_alert(alert)
+
+    def insert_alert(self, alert: Union[Alert, Dict[str, Any]]) -> None:
         """Stores a generated security alert into the local database."""
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        if isinstance(alert, dict):
+            alert_id = alert.get("alert_id") or str(uuid.uuid4())
+            device_id = alert.get("device_id", "UNKNOWN")
+            timestamp = alert.get("timestamp", now_str)
+            rule_ids = alert.get("rule_ids", [])
+            score = int(alert.get("score", 0))
+            severity = alert.get("severity", "Low")
+            explanation = alert.get("explanation", "")
+            mitre_ids = alert.get("mitre_ids", [])
+            raw_event = alert.get("raw_event", {})
+        else:
+            alert_id = alert.alert_id
+            device_id = alert.device_id
+            timestamp = alert.timestamp
+            rule_ids = alert.rule_ids
+            score = alert.score
+            severity = alert.severity
+            explanation = alert.explanation
+            mitre_ids = alert.mitre_ids
+            raw_event = alert.raw_event
 
         with self._lock:
             cursor = self._conn.cursor()
@@ -193,15 +218,15 @@ class LocalStore:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    alert.alert_id,
-                    alert.device_id,
-                    alert.timestamp,
-                    json.dumps(alert.rule_ids),
-                    alert.score,
-                    alert.severity,
-                    alert.explanation,
-                    json.dumps(alert.mitre_ids),
-                    json.dumps(alert.raw_event),
+                    alert_id,
+                    device_id,
+                    timestamp,
+                    json.dumps(rule_ids),
+                    score,
+                    severity,
+                    explanation,
+                    json.dumps(mitre_ids),
+                    json.dumps(raw_event),
                     now_str,
                 ),
             )

@@ -19,11 +19,24 @@ import boto3
 
 try:
     from shared.notifier import format_silence_alert
-except ImportError:
-    import importlib
-
-    _notif = importlib.import_module("cloud.lambda.shared.notifier")
-    format_silence_alert = _notif.format_silence_alert
+except Exception:
+    def format_silence_alert(device_id: str, last_seen: str, minutes_silent: int) -> tuple[str, str]:
+        subject = f"[ALERT] Endpoint Silence Detected — {device_id}"
+        body = (
+            "======================================================================\n"
+            "BROWSER HIJACK DETECTOR — ENDPOINT SILENCE ALERT\n"
+            "======================================================================\n"
+            f"Device ID:      {device_id}\n"
+            f"Status:         SILENT / OFFLINE\n"
+            f"Last Seen:      {last_seen}\n"
+            f"Duration:       {minutes_silent} minutes without heartbeat\n\n"
+            "REASON FOR ALERT:\n"
+            "----------------------------------------------------------------------\n"
+            f"Endpoint '{device_id}' has not sent a heartbeat for over {minutes_silent} minutes.\n"
+            "The agent service may have been stopped, uninstalled, or compromised.\n\n"
+            "======================================================================\n"
+        )
+        return subject, body
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

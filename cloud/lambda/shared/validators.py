@@ -21,6 +21,7 @@ ALLOWED_EVENT_TYPES: Set[str] = {
     "task_create",
     "service_install",
     "log_cleared",
+    "script_execute",
 }
 
 ALLOWED_FIELD_TYPES = (str, int, float, bool, type(None))

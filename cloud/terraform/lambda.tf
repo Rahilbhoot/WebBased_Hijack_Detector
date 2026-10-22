@@ -9,7 +9,7 @@ data "archive_file" "lambda_bundle" {
   type        = "zip"
   source_dir  = "${path.module}/../lambda"
   output_path = "${path.module}/.build/lambda_bundle.zip"
-  excludes    = ["__pycache__", ".*", "*.pyc"]
+  excludes    = ["__pycache__", "*.pyc"]
 }
 
 # ------------------------------------------
@@ -194,12 +194,15 @@ resource "aws_iam_policy" "detect_policy" {
         Action = [
           "dynamodb:PutItem",
           "dynamodb:GetItem",
-          "dynamodb:Query"
+          "dynamodb:UpdateItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
         ]
         Resource = [
           aws_dynamodb_table.alerts.arn,
           "${aws_dynamodb_table.alerts.arn}/index/*",
-          aws_dynamodb_table.event_history.arn
+          aws_dynamodb_table.event_history.arn,
+          aws_dynamodb_table.devices.arn
         ]
       },
       {
@@ -233,6 +236,7 @@ resource "aws_lambda_function" "detect" {
       CONFIG_BUCKET       = aws_s3_bucket.config.id
       ALERTS_TABLE        = aws_dynamodb_table.alerts.name
       EVENT_HISTORY_TABLE = aws_dynamodb_table.event_history.name
+      DEVICES_TABLE       = aws_dynamodb_table.devices.name
       SNS_TOPIC_ARN       = aws_sns_topic.alerts.arn
     }
   }

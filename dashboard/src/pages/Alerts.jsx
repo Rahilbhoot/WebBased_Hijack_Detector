@@ -44,6 +44,8 @@ export const Alerts = () => {
 
   useEffect(() => {
     fetchAlerts();
+    const interval = setInterval(fetchAlerts, 8000); // Real-time 8s SOC polling
+    return () => clearInterval(interval);
   }, [selectedSeverity, selectedDevice]);
 
   const handleRefresh = () => {

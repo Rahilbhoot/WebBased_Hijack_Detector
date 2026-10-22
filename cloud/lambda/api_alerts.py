@@ -17,11 +17,23 @@ from typing import Any, Dict, List, Optional
 import boto3
 from boto3.dynamodb.conditions import Attr, Key
 
+from decimal import Decimal
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 ALERTS_TABLE = os.environ.get("ALERTS_TABLE", "hijack-detector-dev-alerts")
 EVENT_HISTORY_TABLE = os.environ.get("EVENT_HISTORY_TABLE", "hijack-detector-dev-event-history")
+
+
+def decimal_default(obj: Any) -> Any:
+    if isinstance(obj, Decimal):
+        return int(obj) if obj % 1 == 0 else float(obj)
+    if isinstance(obj, (datetime, )):
+        return obj.isoformat()
+    if isinstance(obj, set):
+        return list(obj)
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 
 def get_dynamodb_resource():
@@ -37,7 +49,7 @@ def json_response(status_code: int, body: Any) -> Dict[str, Any]:
             "Access-Control-Allow-Methods": "GET,OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
         },
-        "body": json.dumps(body),
+        "body": json.dumps(body, default=decimal_default),
     }
 
 
@@ -160,7 +172,7 @@ def handler(
         return json_response(code, res)
 
     # GET /alerts
-    device_filter = query_params.get("device")
+    device_filter = query_params.get("device") or query_params.get("device_id")
     severity_filter = query_params.get("severity")
     limit = int(query_params.get("limit", 25))
     from_time = query_params.get("from")

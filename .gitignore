@@ -10,6 +10,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyd
 .Python
 env/
 venv/
@@ -52,6 +53,8 @@ bookmarks.json
 
 # Terraform
 **/.terraform/*
+.build/
+*.zip
 *.tfstate
 *.tfstate.*
 crash.log

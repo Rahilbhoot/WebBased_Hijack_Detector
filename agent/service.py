@@ -126,7 +126,7 @@ class HijackDetectorService:
                     # 2. Normalize raw XML/dict events to unified schema
                     normalized_batch = []
                     for raw in raw_events:
-                        norm = normalize(raw)
+                        norm = normalize(raw, device_id=self.config.device_id)
                         if norm:
                             normalized_batch.append(norm)
 
