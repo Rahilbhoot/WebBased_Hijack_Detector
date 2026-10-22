@@ -348,6 +348,8 @@ class LocalStore:
             return {
                 "total_batches": int(row["total_batches"]),
                 "total_events": int(row["total_events"]),
+                "pending_batches": int(row["total_batches"]),
+                "pending_events": int(row["total_events"]),
             }
 
     def close(self) -> None:
