@@ -3,28 +3,39 @@
 [![CI Status](https://github.com/Rahilbhoot/WebBased_Hijack_Detector/actions/workflows/ci.yml/badge.svg)](https://github.com/Rahilbhoot/WebBased_Hijack_Detector/actions)
 [![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Terraform](https://img.shields.io/badge/terraform-1.6%2B-purple.svg)](https://www.terraform.io/)
-[![React](https://img.shields.io/badge/react-18.3-61dafb.svg)](https://react.dev/)
+[![React](https://img.shields.io/badge/react-18.2-61dafb.svg)](https://react.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-An enterprise-grade hybrid security monitoring platform designed to detect, correlate, and alert on browser hijacking attacks in Windows environments using native event logs (**Sysmon**, **Security**, **System**, **PowerShell**) and AWS serverless analytics.
+An enterprise-grade hybrid security monitoring and detection platform designed to detect, correlate, and alert on browser hijacking attacks in Windows environments using native event logs (**Sysmon**, **Security**, **System**, **PowerShell**) and AWS serverless analytics.
 
 ---
 
-## 1. Executive Summary
+## 1. About the Project
 
-Browser hijackers often evade traditional antivirus solutions by manipulating legitimate operating system mechanisms rather than executing traditional exploit code. These stealthy techniques include injecting malicious flags into browser shortcut target paths (`.lnk`), altering enterprise Group Policy registry keys, configuring local proxy loopbacks, or tampering with the Windows `hosts` file.
+Browser hijackers frequently bypass traditional signature-based antivirus solutions by manipulating legitimate operating system features rather than executing binary malware payloads. These stealth techniques include injecting proxy flags into browser shortcut target paths (`.lnk`), forcing malicious homepages via Group Policy registry keys, tampering with the system `hosts` file, or installing persistent scheduled tasks.
 
-The **Windows Log-Based Browser Hijack Detector** provides:
-- **Zero-Polling Kernel Collection**: Consumes events via kernel-level XPath bookmarks, eliminating CPU overhead (<1.2% CPU).
-- **Multi-Stage Sliding-Window Correlation**: Detects chained attack sequences across time (e.g. Registry policy modification followed by browser launch).
-- **WORM Audit Immutability**: All raw event batches are secured in Amazon S3 under **Object Lock Compliance Mode** (90-day retention).
-- **Zero Event Loss Resilience**: Buffered SQLite outbox queue automatically caches events during network outages and drains upon reconnection.
-- **Modern SOC Web Dashboard**: Real-time incident triage console with plain-English threat narratives, interactive timeline visualizers, and endpoint fleet management.
-- **Cost-Efficient Serverless Footprint**: Operates on AWS serverless primitives for under **$2.10 / month**.
+The **Windows Log-Based Browser Hijack Detector** delivers end-to-end endpoint visibility and threat detection through three tightly integrated components:
+
+1. **Windows Endpoint Agent (Python / Windows Service)**:
+   - **Zero-Polling Kernel Collection**: Consumes events via native kernel-level XPath bookmarks across Security, System, Sysmon, and PowerShell channels with minimal CPU overhead (<1.2%).
+   - **Offline Outbox Buffer**: Built-in SQLite WAL-mode queue prevents event loss during network disconnections and drains automatically once connectivity returns.
+   - **Local Pre-Filtering & Normalization**: Standardizes diverse Windows XML schemas into uniform JSON representations and evaluates heuristics locally before transmission.
+
+2. **AWS Serverless Cloud Pipeline**:
+   - **Ingestion & Auth**: High-throughput Amazon API Gateway HTTP API paired with a Lambda custom authorizer verifying hashed API keys against Amazon DynamoDB.
+   - **WORM Audit Immutability**: Batches raw event JSONs into Amazon S3 with **Object Lock Compliance Mode** (90-day retention) for tamper-proof forensic auditing.
+   - **Serverless Detection & Correlation**: AWS Lambda evaluates atomic rules and queries a sliding-window DynamoDB history to detect multi-stage chained attack sequences.
+   - **Automated Alerting**: Real-time email and webhook alerts for High-severity incidents via Amazon SNS.
+
+3. **Modern SOC Web Dashboard (React 18 + Vite)**:
+   - Cyber-themed dark mode console with glassmorphism panels.
+   - Live **Alerts Explorer** with 8-second auto-refresh, search filters, and severity indicators.
+   - **Incident Dossier**: Detailed threat narratives, MITRE ATT&CK badges, forensic evidence, and interactive **±10-minute correlated event timelines**.
+   - **Endpoints Fleet**: Live device heartbeat status, uptime monitoring, and instant one-click API key revocation.
 
 ---
 
-## 2. System Architecture
+## 2. Architecture Diagram
 
 ```mermaid
 graph TD
@@ -32,6 +43,7 @@ graph TD
         W1[Sysmon Event Log] --> C[XPath Event Collector]
         W2[Security Event Log] --> C
         W3[System Event Log] --> C
+        W4[PowerShell Event Log] --> C
         C --> N[Normalizer]
         N --> SQ[(SQLite Outbox Buffer)]
         SQ --> S[Resilient Event Sender]
@@ -42,23 +54,23 @@ graph TD
         S -->|HTTPS / POST| GW[API Gateway HTTP API]
         GW -->|x-api-key| AUTH[Lambda Custom Authorizer]
         AUTH -->|SHA-256 Lookup| T_DEV[(DynamoDB devices)]
-        GW -->|/events| L_INGEST[Event Ingest Lambda]
-        GW -->|/heartbeat| L_HEARTBEAT[Heartbeat Lambda]
+        GW -->|POST /events| L_INGEST[Event Ingest Lambda]
+        GW -->|POST /heartbeat| L_HEARTBEAT[Heartbeat Lambda]
     end
 
-    subgraph "Cloud Correlation & Storage"
+    subgraph "Cloud Correlation & Analytics"
         L_INGEST -->|Raw JSON Batches| S3_RAW[(S3 Raw Logs WORM)]
-        L_INGEST -->|Deduplication| T_HIST[(DynamoDB event_history)]
+        L_INGEST -->|Deduplication & Window| T_HIST[(DynamoDB event_history)]
         L_INGEST -->|Async Dispatch| L_DETECT[Detection Lambda]
         S3_CFG[(S3 Config Bucket)] -->|Cache rules.yaml| L_DETECT
-        L_DETECT -->|Store Incident| T_ALERT[(DynamoDB alerts)]
+        L_DETECT -->|Record Incident| T_ALERT[(DynamoDB alerts)]
         L_DETECT -->|High Severity &ge; 60| SNS[Amazon SNS Topic]
-        SNS -->|Email Alert| SOC[SOC Team]
+        SNS -->|Email Alert| SOC[SOC Analysts]
     end
 
     subgraph "SOC Management & Console"
-        DASH[React SOC Dashboard] -->|Cognito JWT| GW
-        GW -->|/alerts, /stats, /devices| L_API[Dashboard APIs]
+        DASH[React SOC Dashboard] -->|HTTP / REST| GW
+        GW -->|GET /alerts, /stats, /devices| L_API[Dashboard APIs]
         L_API --> T_ALERT
         L_API --> T_DEV
     end
@@ -66,116 +78,212 @@ graph TD
 
 ---
 
-## 3. Detection Rules & MITRE ATT&CK Mapping
+## 3. Detection Rules & MITRE ATT&CK Matrix
 
-The system continuously evaluates incoming telemetry against 8 specialized atomic heuristics and 3 multi-stage correlation chains:
-
-### Atomic Detection Rules (`rules/rules.yaml`)
-| Rule ID | Name | Event Source | MITRE ATT&CK | Base Score | Threat Description |
+### Atomic Heuristics (`rules/rules.yaml`)
+| Rule ID | Threat Name | Event Source | MITRE ATT&CK | Score | Detection Logic |
 |---|---|---|---|---|---|
-| **BH001** | Browser launched with proxy/extension flags | Sysmon 1 / Sec 4688 | [T1090](https://attack.mitre.org/techniques/T1090/), [T1176](https://attack.mitre.org/techniques/T1176/) | 40 | Execution with `--proxy-server`, `--load-extension`, or `--user-data-dir` |
-| **BH002** | Browser policy registry modified | Sysmon 13 / Sec 4657 | [T1112](https://attack.mitre.org/techniques/T1112/) | 40 | Unauthorized changes under `Policies\Google\Chrome` or `Policies\Microsoft\Edge` |
-| **BH003** | System proxy / PAC script changed | Sysmon 13 / Sec 4657 | [T1090](https://attack.mitre.org/techniques/T1090/) | 30 | Tampering with `Internet Settings\ProxyServer` or `AutoConfigURL` |
-| **BH004** | Windows hosts file modified | Sysmon 11 / Sec 4663 | [T1565.001](https://attack.mitre.org/techniques/T1565/001/) | 40 | Direct modification of `C:\Windows\System32\drivers\etc\hosts` |
-| **BH005** | Browser shortcut modified | Sysmon 11 | [T1547.009](https://attack.mitre.org/techniques/T1547/009/) | 30 | Alteration of desktop or Start Menu `.lnk` shortcut files |
-| **BH006** | Suspicious scheduled task or service | Security 4698 / Sys 7045 | [T1053.005](https://attack.mitre.org/techniques/T1053/005/) | 35 | Persistence mechanisms created to launch browser binaries |
-| **BH007** | Security audit log cleared | Security 1102 / Sys 104 | [T1070.001](https://attack.mitre.org/techniques/T1070/001/) | 60 | Defense evasion attempt to clear forensic audit logs |
-| **BH008** | Root certificate added to store | Sysmon 13 / Sec 4657 | [T1553.004](https://attack.mitre.org/techniques/T1553/004/) | 45 | Rogue certificate added to `ROOT\Certificates` (HTTPS interception) |
+| **BH001** | Suspicious Browser Flags | Sysmon 1 / Sec 4688 | [T1090](https://attack.mitre.org/techniques/T1090/), [T1176](https://attack.mitre.org/techniques/T1176/) | 40 | Browser launched with `--proxy-server`, `--load-extension`, or `--user-data-dir` |
+| **BH002** | Browser Policy Hijack | Sysmon 13 / Sec 4657 | [T1112](https://attack.mitre.org/techniques/T1112/) | 50 | Registry keys modified under `Policies\Google\Chrome` or `Policies\Microsoft\Edge` |
+| **BH003** | System Proxy Altered | Sysmon 13 / Sec 4657 | [T1090](https://attack.mitre.org/techniques/T1090/) | 30 | Tampering with `Internet Settings\ProxyServer` or `AutoConfigURL` |
+| **BH004** | Hosts File Modified | Sysmon 11 / Sec 4663 | [T1565.001](https://attack.mitre.org/techniques/T1565/001/) | 40 | Unauthorized modification of `C:\Windows\System32\drivers\etc\hosts` |
+| **BH005** | Browser Shortcut Tampered | Sysmon 11 | [T1547.009](https://attack.mitre.org/techniques/T1547/009/) | 30 | Modification of desktop or Start Menu `.lnk` shortcut files |
+| **BH006** | Persistence Task/Service | Security 4698 / Sys 7045 | [T1053.005](https://attack.mitre.org/techniques/T1053/005/) | 35 | Scheduled tasks or Windows services created to run browser commands |
+| **BH007** | Security Log Cleared | Security 1102 / Sys 104 | [T1070.001](https://attack.mitre.org/techniques/T1070/001/) | 60 | Defense evasion indicator: audit event log wiped |
+| **BH008** | Root Certificate Injected | Sysmon 13 / Sec 4657 | [T1553.004](https://attack.mitre.org/techniques/T1553/004/) | 45 | Certificate added to `ROOT\Certificates` (HTTPS interception) |
 
 ### Multi-Stage Correlation Chains (`rules/correlation_rules.yaml`)
-| Chain ID | Name | Required Sequence | Time Window | Bonus | Total Risk |
+| Chain ID | Sequence Description | Required Events | Time Window | Bonus | Total Score |
 |---|---|---|---|---|---|
-| **CR01** | Registry policy change followed by browser launch | `BH002` &rarr; `BH001` | 300s (5 min) | **+30** | **70 (High)** |
+| **CR01** | Policy modified followed by browser launch | `BH002` &rarr; `BH001` | 300s (5 min) | **+30** | **70 (High)** |
 | **CR02** | Proxy redirection combined with hosts tampering | `BH003` + `BH004` | 600s (10 min) | **+25** | **65 (High)** |
-| **CR03** | Attack activity followed by security log clearing | `BH*` &rarr; `BH007` | 600s (10 min) | **+30** | **90 (High)** |
+| **CR03** | Attack activity followed by security log wipe | `BH*` &rarr; `BH007` | 600s (10 min) | **+30** | **90 (High)** |
 
 ---
 
-## 4. Quick Start Guide
+## 4. Quick Start: Setting Up After Cloning
+
+Follow this step-by-step guide to run the full platform from scratch.
 
 ### Prerequisites
-1. **Windows 10 / 11** or **Windows Server 2022** (x64).
-2. **Python 3.11+** installed.
-3. **PowerShell 5.1+** running as Administrator.
-4. **Node.js 20+** (for dashboard development/build).
+- **Operating System**: Windows 10/11 or Windows Server 2022 (x64)
+- **Python**: Version **3.11+** installed and added to PATH
+- **Node.js**: Version **18+** (with npm)
+- **AWS CLI**: Installed and configured (`aws configure`)
+- **Terraform**: Version **1.6+** installed and added to PATH
 
-### Step 1: Configure Windows Event Auditing
-Run the automated auditing setup script in an elevated PowerShell prompt:
-```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\setup_lab_auditing.ps1
-powershell.exe -ExecutionPolicy Bypass -File .\scripts\verify_lab_auditing.ps1
-```
+---
 
-### Step 2: Install Agent Dependencies
+### Step 1: Clone Repository & Create Virtual Environment
+Open PowerShell or your preferred terminal:
+
 ```powershell
+git clone https://github.com/Rahilbhoot/WebBased_Hijack_Detector.git
+cd WebBased_Hijack_Detector
+
+# Create and activate Python virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Install Python packages in editable development mode
 pip install -e .[dev,cloud]
 ```
 
-### Step 3: Run the Agent
+---
 
-#### Mode A: Standalone Local Mode (Offline Evaluation)
-Run the agent locally without any cloud setup:
-```powershell
-python -m agent.standalone
-```
-All alerts are printed to the console and stored in `data/local_alerts.sqlite`.
+### Step 2: Deploy Cloud Infrastructure with Terraform
+Deploy the serverless backend (API Gateway, DynamoDB tables, S3 buckets, and Lambda functions) to AWS:
 
-#### Mode B: Cloud Connected Mode
-Configure your credentials in `.env`:
-```ini
-DEVICE_ID=PC-LAB-01
-API_ENDPOINT=https://<api-id>.execute-api.us-east-1.amazonaws.com
-API_KEY=bh_your_api_key_here
-```
-Run the unified agent daemon:
 ```powershell
-python -m agent.service
+cd cloud/terraform
+
+# Initialize Terraform providers
+terraform init
+
+# Deploy infrastructure (takes ~2 minutes)
+terraform apply -auto-approve
 ```
 
-#### Mode C: Windows Service Installation
-Package the standalone executable and install it as an auto-recovering Windows Service:
+At the end of the deployment, Terraform will output values like:
+```text
+api_gateway_endpoint = "https://<api-id>.execute-api.ap-south-1.amazonaws.com"
+dynamodb_alerts_table = "hijack-detector-dev-alerts"
+```
+
+Copy the `api_gateway_endpoint` value and return to the root folder:
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\agent\installer\build.ps1
-powershell.exe -ExecutionPolicy Bypass -File .\agent\installer\install_service.ps1
+cd ../..
 ```
 
 ---
 
-## 5. SOC Dashboard
+### Step 3: Configure Environment Variables
+1. **Root `.env` Configuration** (Used by the Agent and Simulation Scripts):
+   Copy `.env.example` to `.env`:
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+   Open `.env` and fill in your details:
+   ```ini
+   DEVICE_ID=PC-LAB-01
+   API_ENDPOINT=https://<api-id>.execute-api.ap-south-1.amazonaws.com
+   API_KEY=
+   ```
 
-The SOC Dashboard is a modern React SPA built with glassmorphism panels, dark mode cyber aesthetics, and live data streaming.
+2. **Dashboard `.env` Configuration**:
+   Create or edit `dashboard/.env`:
+   ```ini
+   VITE_API_ENDPOINT=https://<api-id>.execute-api.ap-south-1.amazonaws.com
+   ```
 
-### Running the Dashboard Locally
+---
+
+### Step 4: Enroll Your Device & Generate API Key
+Register your local machine into the fleet registry to obtain an API key:
+
+```powershell
+python scripts/enroll_device.py --device-id PC-LAB-01
+```
+*(The script will enroll `PC-LAB-01` into DynamoDB and automatically save the generated `API_KEY` into your `.env` file.)*
+
+---
+
+### Step 5: Start the Endpoint Agent Daemon
+In **Terminal 1**, start the background agent service:
+
+```powershell
+python -m agent
+```
+You will see:
+```text
+[INFO] Initializing Hijack Detector Agent Service for device 'PC-LAB-01'.
+[INFO] HeartbeatService started (interval=120s).
+[INFO] Agent event collection loop running.
+[INFO] Heartbeat delivered successfully for device 'PC-LAB-01'.
+```
+*(Keep this terminal running. It monitors Windows Event Logs in real time and streams telemetry to AWS.)*
+
+---
+
+### Step 6: Start the SOC Web Dashboard
+In **Terminal 2**, start the React dashboard development server:
+
 ```powershell
 cd dashboard
 npm install
 npm run dev
 ```
-Open [http://localhost:5173](http://localhost:5173). Click **"Autofill Demo Credentials"** to log in instantly.
 
-### Dashboard Key Features:
-- **Overview Console**: 24h threat severity donut chart, top triggered rules, and fleet status breakdown.
-- **Alerts Explorer**: Live filterable incident stream by severity, device, and MITRE ATT&CK techniques.
-- **Incident Investigation Dossier**: Plain-English threat narrative, forensic artifact details (process image, command line, registry targets), and visual **&plusmn;10-minute correlated event timeline**.
-- **Endpoints Fleet**: Online/offline device status with animated pulsing indicators, one-click credential revocation, and new endpoint enrollment modal.
-- **Threat Rules & Intel**: Directory of atomic rules, correlation chains, and whitelist policies.
+Open your browser at **[http://localhost:3000](http://localhost:3000)**.
+- Navigate to **Alerts Explorer** ([http://localhost:3000/alerts](http://localhost:3000/alerts)).
+- Navigate to **Endpoints Fleet** ([http://localhost:3000/devices](http://localhost:3000/devices)) to see `PC-LAB-01` reported **Online**.
+
+---
+
+### Step 7: Simulate Attacks & Observe Real-Time Detections
+In **Terminal 3**, run simulated attack scenarios to see alerts populate the dashboard:
+
+#### Option A: Direct Telemetry Injector (Fastest & Zero Setup)
+Simulates any attack without requiring elevated privileges:
+
+```powershell
+# Simulate a correlated multi-stage attack (CR01 - High Severity):
+python scripts/inject_simulated_attack.py --scenario CR01
+
+# Simulate all attack scenarios (BH001, BH002, BH003, BH004, BH006, CR01):
+python scripts/inject_simulated_attack.py --scenario ALL
+```
+
+#### Option B: Real Windows OS Process & Registry Simulation
+Executes actual processes and registry changes on your machine:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\simulate_attacks.ps1 -Attack 1
+```
+
+Watch Terminal 1 log the local detection, transmit the batch to AWS, and see the new incident card stream into **[http://localhost:3000/alerts](http://localhost:3000/alerts)** in real time!
+
+---
+
+## 5. Operating Modes
+
+The endpoint agent can be operated in three distinct modes:
+
+### Mode 1: Cloud-Connected Daemon (Recommended)
+Streams telemetry to AWS API Gateway, benefits from serverless correlation, and surfaces alerts in the web dashboard:
+```powershell
+python -m agent
+```
+
+### Mode 2: Standalone Local Mode (100% Offline)
+Runs entirely on the local machine with zero external network connectivity. Heuristics are evaluated locally and stored in SQLite:
+```powershell
+python -m agent.standalone
+```
+*(Alerts are logged to console and saved in `data/local_alerts.sqlite`.)*
+
+### Mode 3: Windows Service (Production Auto-Start)
+Installs the agent as a resilient, auto-recovering Windows Service via NSSM:
+```powershell
+# Run elevated as Administrator:
+powershell.exe -ExecutionPolicy Bypass -File .\agent\installer\install_service.ps1
+```
 
 ---
 
 ## 6. Testing & Quality Assurance
 
-The codebase maintains 100% pass rates across all test suites:
+Run the comprehensive automated test suite and code linters:
 
 ```powershell
-# Run all 128 unit and integration tests
-python -m pytest -v
+# Run all unit and integration tests (128+ passing tests)
+pytest -v
 
-# Run code linter
-python -m ruff check agent cloud tests scripts
+# Run fast code formatting and linting
+ruff check .
 
-# Validate Terraform infrastructure
+# Validate Terraform IaC configuration
 cd cloud/terraform
-terraform fmt -check
 terraform validate
 ```
 
@@ -183,32 +291,53 @@ terraform validate
 
 ## 7. Project Structure
 
-```
+```text
 hijack-detector/
-├── .github/                      # CI/CD Workflows (GitHub Actions & Dependabot)
-│   ├── workflows/ci.yml          # Automated linting, pytest, terraform, & build
-│   ├── workflows/deploy-infra.yml# Terraform apply & S3 rules sync via OIDC
-│   └── workflows/deploy-dashboard.yml # S3 & CloudFront dashboard deployment
-├── agent/                        # Windows Endpoint Agent
+├── .github/                      # CI/CD Workflows (Testing, Deployment, Dependabot)
+│   ├── workflows/ci.yml          # Automated pytest, ruff lint, & terraform validation
+│   └── workflows/deploy-infra.yml# GitHub Actions AWS OIDC deployment pipeline
+├── agent/                        # Windows Endpoint Agent Core
+│   ├── __main__.py               # CLI entrypoint for `python -m agent`
 │   ├── collector.py              # Kernel XPath Windows Event Log reader
 │   ├── normalizer.py             # XML schema normalization engine
 │   ├── rule_engine.py            # Local heuristic matching & scoring
 │   ├── correlator.py             # Multi-stage sliding-window correlator
 │   ├── sender.py                 # HTTPS batching with SQLite buffering
 │   ├── heartbeat.py              # Endpoint health telemetry service
-│   ├── service.py                # Unified agent entrypoint & daemon
-│   └── installer/                # Packaging, service installer, & ACL scripts
-├── cloud/                        # Cloud Infrastructure & Backend Microservices
-│   ├── lambda/                   # Serverless handlers (ingest, detect, heartbeat, APIs)
-│   └── terraform/                # Infrastructure as Code (S3, DynamoDB, Cognito, APIGW)
-├── dashboard/                    # React 18 SOC Web Application
-│   ├── src/pages/                # Overview, Alerts, AlertDetail, Devices, Rules, Login
-│   ├── src/auth/                 # AWS Cognito AuthContext
-│   └── src/api/                  # API client & offline demo mock data
-├── docs/                         # Architecture, runbooks, metrics, & install guides
-├── rules/                        # YAML Detection Rules, Whitelist, & Correlation Chains
-├── scripts/                      # Lab auditing scripts & simulation tools
-└── tests/                        # 128 automated unit & integration tests
+│   ├── local_store.py            # Thread-safe SQLite WAL persistence
+│   └── service.py                # Unified agent service loop
+├── cloud/                        # Cloud Infrastructure & Microservices
+│   ├── lambda/                   # Serverless Lambda handlers
+│   │   ├── ingest.py             # POST /events ingestion & S3 WORM archive
+│   │   ├── detect.py             # Serverless correlation & alert generator
+│   │   ├── heartbeat.py          # POST /heartbeat & silence detection
+│   │   ├── authorizer.py         # Custom API Gateway key validator
+│   │   ├── api_alerts.py         # GET /alerts & GET /alerts/{id}
+│   │   ├── api_devices.py        # Fleet device management & enrollment
+│   │   ├── api_stats.py          # Fleet overview & 24h metrics aggregation
+│   │   └── api_rules.py          # Threat catalog & whitelist API
+│   └── terraform/                # Infrastructure as Code (AWS ap-south-1)
+│       ├── api_gateway.tf        # HTTP API & route definitions
+│       ├── lambda.tf             # Functions, IAM policies, and CloudWatch
+│       ├── dynamodb.tf           # Alerts, devices, and event history tables
+│       ├── s3.tf                 # WORM raw log bucket & config bucket
+│       └── dashboard_api.tf      # SOC dashboard REST endpoints
+├── dashboard/                    # React 18 + Vite SOC Dashboard
+│   ├── src/pages/                # Overview, Alerts Explorer, AlertDetail, Devices
+│   ├── src/components/           # Navbar, IncidentCards, MetricBadges
+│   └── src/api/client.js         # API Gateway HTTP client
+├── rules/                        # Threat Detection Rules
+│   ├── rules.yaml                # Atomic heuristics (BH001 - BH008)
+│   ├── correlation_rules.yaml    # Chained attack sequences (CR01 - CR03)
+│   └── whitelist.yaml            # Trusted binaries and updater paths
+├── scripts/                      # Setup & Attack Simulation Utilities
+│   ├── enroll_device.py          # Automated device enrollment & key generator
+│   ├── inject_simulated_attack.py# Direct attack telemetry injector
+│   ├── simulate_attacks.ps1      # Native Windows OS attack simulator
+│   └── setup_lab_auditing.ps1    # Automated Windows audit policy configurator
+└── tests/                        # 128 Automated Unit & Integration Tests
+    ├── unit/                     # Collector, normalizer, rule engine, & outbox tests
+    └── integration/              # End-to-end cloud pipeline & resilience tests
 ```
 
 ---
