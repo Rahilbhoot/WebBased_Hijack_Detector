@@ -55,9 +55,8 @@ testpaths = [
     "tests",
 ]
 pythonpath = [
-    ".",
-    "agent",
     "cloud/lambda",
+    ".",
 ]
 
 [tool.mypy]

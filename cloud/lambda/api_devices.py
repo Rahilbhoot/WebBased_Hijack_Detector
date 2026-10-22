@@ -140,9 +140,12 @@ def handler(
     dyn = dynamodb_resource or get_dynamodb_resource()
     table = dyn.Table(DEVICES_TABLE)
 
+    route_key = event.get("routeKey", "")
+    route_method = route_key.split()[0] if " " in route_key else ""
     method = (
         event.get("requestContext", {}).get("http", {}).get("method")
         or event.get("httpMethod")
+        or route_method
         or "GET"
     )
     path = event.get("rawPath") or event.get("path") or ""

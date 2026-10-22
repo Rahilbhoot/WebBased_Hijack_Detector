@@ -136,8 +136,14 @@ def load_config(config_path: Optional[Path] = None) -> AgentConfig:
                 )
             )
 
+    raw_device_id = str(data.get("device_id") or os.environ.get("DEVICE_ID") or "").strip()
+    if not raw_device_id or raw_device_id.upper() == "AUTO":
+        import socket
+
+        raw_device_id = f"PC-{socket.gethostname().upper()}"
+
     return AgentConfig(
-        device_id=str(data.get("device_id") or os.environ.get("DEVICE_ID") or "PC-LAB-01"),
+        device_id=raw_device_id,
         api_endpoint=str(data.get("api_endpoint") or os.environ.get("API_ENDPOINT") or ""),
         api_key=str(data.get("api_key") or os.environ.get("API_KEY") or ""),
         channels=channels,

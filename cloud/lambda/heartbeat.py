@@ -81,25 +81,52 @@ def handle_heartbeat_post(event: Dict[str, Any], table: Any) -> Dict[str, Any]:
     uptime_seconds = int(payload.get("uptime_seconds", 0))
     os_version = str(payload.get("os_version", "Windows"))
     queue_size = int(payload.get("event_queue_size", 0))
+    hostname = str(payload.get("hostname", ""))
+    total_events_sent = int(payload.get("total_events_sent", 0))
+
+    # Source IP from HTTP request context or payload
+    source_ip = str(
+        req_context.get("http", {}).get("sourceIp")
+        or payload.get("ip_address")
+        or ""
+    )
+
+    update_parts = [
+        "#st = :online",
+        "last_seen = :iso",
+        "last_seen_epoch = :epoch",
+        "agent_version = :ver",
+        "uptime_seconds = :uptime",
+        "os_version = :os",
+        "event_queue_size = :qs",
+        "updated_at = :iso",
+    ]
+    expr_vals = {
+        ":online": "Online",
+        ":iso": now_iso,
+        ":epoch": now_epoch,
+        ":ver": agent_version,
+        ":uptime": uptime_seconds,
+        ":os": os_version,
+        ":qs": queue_size,
+    }
+
+    if hostname:
+        update_parts.append("hostname = :host")
+        expr_vals[":host"] = hostname
+    if source_ip:
+        update_parts.append("ip_address = :ip")
+        expr_vals[":ip"] = source_ip
+    if total_events_sent > 0:
+        update_parts.append("total_events_sent = :tot")
+        expr_vals[":tot"] = total_events_sent
 
     try:
         table.update_item(
             Key={"device_id": device_id},
-            UpdateExpression=(
-                "SET #st = :online, last_seen = :iso, last_seen_epoch = :epoch, "
-                "agent_version = :ver, uptime_seconds = :uptime, "
-                "os_version = :os, event_queue_size = :qs, updated_at = :iso"
-            ),
+            UpdateExpression="SET " + ", ".join(update_parts),
             ExpressionAttributeNames={"#st": "status"},
-            ExpressionAttributeValues={
-                ":online": "Online",
-                ":iso": now_iso,
-                ":epoch": now_epoch,
-                ":ver": agent_version,
-                ":uptime": uptime_seconds,
-                ":os": os_version,
-                ":qs": queue_size,
-            },
+            ExpressionAttributeValues=expr_vals,
         )
         logger.info(f"Recorded heartbeat for device '{device_id}' (uptime={uptime_seconds}s).")
         return json_response(
