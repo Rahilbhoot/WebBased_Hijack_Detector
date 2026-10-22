@@ -345,3 +345,6 @@ hijack-detector/
 ## 8. License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+## 9. Team
+1. RahilBhoot
