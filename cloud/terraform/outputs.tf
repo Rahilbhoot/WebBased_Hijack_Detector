@@ -104,3 +104,15 @@ output "lambda_heartbeat_arn" {
   value       = aws_lambda_function.heartbeat.arn
 }
 
+# --- React Dashboard Hosting ---
+output "dashboard_s3_bucket" {
+  description = "Name of the S3 bucket hosting the React dashboard"
+  value       = aws_s3_bucket.dashboard.id
+}
+
+output "dashboard_website_url" {
+  description = "Public URL of the hosted React dashboard"
+  value       = "http://${aws_s3_bucket_website_configuration.dashboard.website_endpoint}"
+}
+
+
