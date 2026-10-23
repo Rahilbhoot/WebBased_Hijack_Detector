@@ -6,12 +6,12 @@ python scripts/enroll_device.py --device-id PC-LAB-01
 
 import argparse
 import hashlib
-import json
 import os
 import secrets
-import sys
 from datetime import datetime, timezone
+
 import boto3
+
 # Simple .env parser without external dependencies
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 if os.path.exists(env_path):

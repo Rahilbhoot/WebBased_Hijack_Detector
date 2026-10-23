@@ -43,10 +43,16 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "cloud/lambda/yaml",
+    "dashboard",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B"]
-ignore = []
+ignore = ["E501"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

@@ -9,13 +9,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import sys
 import time
 import urllib.request
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+
 
 # Load environment configuration
 def load_env() -> dict:
@@ -39,7 +38,7 @@ DEVICE_ID = CONFIG.get("DEVICE_ID", "PC-LAB-01")
 def create_attack_events(attack_type: str) -> list[dict]:
     """Generates synthetic normalized attack events matching specified scenario."""
     now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    
+
     if attack_type == "BH001":
         # Chrome launched with proxy flag
         return [{
@@ -105,7 +104,7 @@ def create_attack_events(attack_type: str) -> list[dict]:
             "timestamp": now_iso,
             "type": "file_create",
             "source_event_id": 11,
-            "file_path": rf"C:\Users\Analyst\Desktop\Google Chrome.lnk",
+            "file_path": r"C:\Users\Analyst\Desktop\Google Chrome.lnk",
             "process_image": r"C:\Users\Analyst\Downloads\updater.exe",
             "user": rf"{DEVICE_ID}\Analyst",
         }]
@@ -164,7 +163,7 @@ def send_batch(events: list[dict]) -> dict:
         "events": events,
     }
     data_bytes = json.dumps(payload).encode("utf-8")
-    
+
     req = urllib.request.Request(
         url,
         data=data_bytes,
@@ -174,7 +173,7 @@ def send_batch(events: list[dict]) -> dict:
         },
         method="POST",
     )
-    
+
     with urllib.request.urlopen(req, timeout=15) as res:
         return json.loads(res.read().decode())
 

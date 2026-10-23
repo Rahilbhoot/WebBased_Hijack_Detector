@@ -11,12 +11,11 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Any, Dict, List
 
 import boto3
 from boto3.dynamodb.conditions import Attr
-
-from decimal import Decimal
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

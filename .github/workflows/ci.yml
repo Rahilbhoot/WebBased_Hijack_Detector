@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Ruff Linter
         run: |
-          ruff check agent cloud tests
+          ruff check agent cloud tests scripts
 
       - name: Run Pytest Suite
         run: |

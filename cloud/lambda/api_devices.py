@@ -15,11 +15,10 @@ import logging
 import os
 import secrets
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any, Dict
 
 import boto3
-
-from decimal import Decimal
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
