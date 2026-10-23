@@ -347,6 +347,6 @@ hijack-detector/
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## 9. Team
-1. RahilBhoot
+1. RahilBhoot(LEADER)
 2. AnujBansal
 3. Arth Shah
