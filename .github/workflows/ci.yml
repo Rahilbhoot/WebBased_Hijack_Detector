@@ -10,6 +10,9 @@ jobs:
   python-test-and-lint:
     name: Python Lint & Tests
     runs-on: windows-latest
+    env:
+      AWS_DEFAULT_REGION: ap-south-1
+      AWS_REGION: ap-south-1
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

@@ -279,6 +279,7 @@ def test_security_sql_injection_payload_immunity():
     mock_table = MagicMock()
     mock_dyn.Table.return_value = mock_table
     mock_table.get_item.return_value = {}
+    mock_lam = MagicMock()
 
     injection_event = {
         "device_id": "PC-TEST-01",
@@ -304,7 +305,13 @@ def test_security_sql_injection_payload_immunity():
         },
     }
 
-    resp = ingest_handler(event, s3_client=mock_s3, dynamodb_resource=mock_dyn)
+    resp = ingest_handler(
+        event,
+        s3_client=mock_s3,
+        dynamodb_resource=mock_dyn,
+        lambda_client=mock_lam,
+    )
     assert resp["statusCode"] == 202
     assert mock_s3.put_object.called
     assert mock_table.put_item.called
+    assert mock_lam.invoke.called
